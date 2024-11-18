@@ -1,9 +1,12 @@
+'use client'
+
 import * as RadixDialog from '@radix-ui/react-dialog'
 // @deno-types="npm:@types/react@^18.2.0"
 import * as React from 'react'
 import { commandScore } from './command-score.ts'
 import { Primitive } from '@radix-ui/react-primitive'
 import { useId } from '@radix-ui/react-id'
+import { useSyncExternalStore } from 'use-sync-external-store/shim/index.js'
 
 type Children = { children?: React.ReactNode }
 type DivProps = React.ComponentPropsWithoutRef<typeof Primitive.div>
@@ -123,7 +126,7 @@ type Context = {
   group: (id: string) => () => void
   filter: () => boolean
   label: string
-  disablePointerSelection: boolean
+  getDisablePointerSelection: () => boolean
   // Ids
   listId: string
   labelId: string
@@ -344,7 +347,9 @@ const Command: React.ForwardRefExoticComponent<Omit<any, "ref"> & React.RefAttri
         return propsRef.current.shouldFilter
       },
       label: label || props['aria-label'],
-      disablePointerSelection,
+      getDisablePointerSelection: () => {
+        return propsRef.current.disablePointerSelection
+      },
       listId,
       inputId,
       labelId,
@@ -707,7 +712,7 @@ const Item: React.ForwardRefExoticComponent<Omit<ItemProps, "ref"> & React.RefAt
       aria-selected={Boolean(selected)}
       data-disabled={Boolean(disabled)}
       data-selected={Boolean(selected)}
-      onPointerMove={disabled || context.disablePointerSelection ? undefined : select}
+      onPointerMove={disabled || context.getDisablePointerSelection() ? undefined : select}
       onClick={disabled ? undefined : onSelect}
     >
       {props.children}
@@ -1033,7 +1038,7 @@ function mergeRefs<T = any>(refs: Array<React.MutableRefObject<T> | React.Legacy
 function useCmdk<T = any>(selector: (state: State) => T): T {
   const store = useStore()
   const cb = () => selector(store.snapshot())
-  return React.useSyncExternalStore(store.subscribe, cb, cb)
+  return useSyncExternalStore(store.subscribe, cb, cb)
 }
 
 function useValue(
